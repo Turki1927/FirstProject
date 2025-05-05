@@ -16,7 +16,6 @@ import { Ionicons, FontAwesome } from '@expo/vector-icons';
 const ClientOrdersScreen = () => {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-
   const [modalVisible, setModalVisible] = useState(false);
   const [noteText, setNoteText] = useState('');
   const [selectedWorkerId, setSelectedWorkerId] = useState<string | null>(null);
@@ -104,11 +103,37 @@ const ClientOrdersScreen = () => {
 
     if (error) {
       Alert.alert('خطأ', 'حدثت مشكلة أثناء إرسال الطلب');
-    } else {
-      Alert.alert('✅ تم الطلب مرة أخرى بنجاح');
-      fetchOrders();
-      setModalVisible(false);
+      return;
     }
+
+    // ✅ إرسال إشعار للشغيل بعد الطلب
+    const { data: workerData, error: tokenError } = await supabase
+      .from('workers_profile')
+      .select('expo_push_token')
+      .eq('id', selectedWorkerId)
+      .single();
+
+    if (!tokenError && workerData?.expo_push_token) {
+      await fetch('https://exp.host/--/api/v2/push/send', {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Accept-Encoding': 'gzip, deflate',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          to: workerData.expo_push_token,
+          sound: 'default',
+          title: 'طلب جديد',
+          body: `طلب مرة أخرى: ${noteText}`,
+          data: { screen: 'WorkerOrdersScreen' },
+        }),
+      });
+    }
+
+    Alert.alert('✅ تم الطلب مرة أخرى بنجاح');
+    fetchOrders();
+    setModalVisible(false);
   };
 
   const renderStatus = (status: string) => {
@@ -186,7 +211,6 @@ const ClientOrdersScreen = () => {
         ))
       )}
 
-      {/* ✅ نافذة الملاحظات */}
       <Modal visible={modalVisible} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>

@@ -23,6 +23,12 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "owner": "turki5923",
+    "extra": {
+      "eas": {
+        "projectId": "0ca001a1-b685-4307-899a-405739b9b52b"
+      }
     }
   }
 }

@@ -24,6 +24,8 @@ const WorkerHomeScreen = () => {
   const [loading, setLoading] = useState(true);
   const [pendingOrdersCount, setPendingOrdersCount] = useState<number>(0);
   const [logoutModalVisible, setLogoutModalVisible] = useState(false);
+  const [notificationVisible, setNotificationVisible] = useState(false);
+  const [notificationMessage, setNotificationMessage] = useState('');
 
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
@@ -32,6 +34,18 @@ const WorkerHomeScreen = () => {
     registerForPushNotificationsAsync();
     fetchWorkerData();
     fetchPendingOrders();
+
+    const subscription = Notifications.addNotificationReceivedListener(notification => {
+      const message = notification.request?.content?.body;
+      if (message) {
+        setNotificationMessage(message);
+        setNotificationVisible(true);
+      }
+    });
+
+    return () => {
+      Notifications.removeNotificationSubscription(subscription);
+    };
   }, []);
 
   const requestAndSaveLocation = async () => {
@@ -157,6 +171,30 @@ const WorkerHomeScreen = () => {
           </View>
         </View>
       </Modal>
+
+      {/* ✅ تنبيه التنبيه الجديد */}
+      <Modal
+        isVisible={notificationVisible}
+        animationIn="bounceInDown"
+        animationOut="fadeOutUp"
+        backdropOpacity={0.3}
+        onBackdropPress={() => setNotificationVisible(false)}
+      >
+        <View style={styles.notificationModal}>
+          <Ionicons name="notifications" size={40} color="#1abc9c" />
+          <Text style={styles.notificationTitle}>طلب جديد!</Text>
+          <Text style={styles.notificationText}>{notificationMessage}</Text>
+          <TouchableOpacity
+            style={styles.notificationButton}
+            onPress={() => {
+              setNotificationVisible(false);
+              navigation.navigate('WorkerOrdersScreen');
+            }}
+          >
+            <Text style={styles.notificationButtonText}>عرض الطلب</Text>
+          </TouchableOpacity>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -274,6 +312,35 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 10,
+  },
+  notificationModal: {
+    backgroundColor: '#fff',
+    padding: 20,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  notificationTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#1abc9c',
+    marginTop: 10,
+  },
+  notificationText: {
+    fontSize: 16,
+    color: '#333',
+    textAlign: 'center',
+    marginVertical: 12,
+  },
+  notificationButton: {
+    backgroundColor: '#1abc9c',
+    paddingVertical: 10,
+    paddingHorizontal: 30,
+    borderRadius: 24,
+  },
+  notificationButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
   },
 });
 
